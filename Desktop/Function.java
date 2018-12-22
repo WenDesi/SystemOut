@@ -5,13 +5,41 @@ import java.util.regex.Pattern;
 
 class CalculateModule
 {
-    public int Run(String expression)
+    public int Run(String expression) throws Exception
     {
+        CheckExpression(expression);
         String res=TransForm(expression);
         int n=GetCalculateResult(res);
         return n;
     }
-    private int GetCalculateResult(String res)
+    private void CheckExpression(String expression) throws Exception
+    {
+        char[] ch=expression.toCharArray();
+        int len=ch.length;
+        if((!(ch[0]>='0'&&ch[0]<='9')&&ch[0]!='(')
+                ||(!(ch[len-1]>='0'&&ch[len-1]<='9')&&ch[len-1]!=')'))
+            throw new Exception("Illegal Expression");
+        int l=0,r=0;
+        for(int i=0;i<len;i++)
+        {
+            if(ch[i]=='(')
+            {
+                l++;
+                if(ch[i+1]==')')
+                    throw new Exception("Illegal Expression");
+            }
+            if(ch[i]==')')
+                r++;
+            if(ch[i]!='+'&&ch[i]!='-'&&ch[i]!='*'&&ch[i]!='/'&&ch[i]!='('&&ch[i]!=')'
+                    &&(!(ch[i]>='0'&&ch[i]<='9')))
+            {
+                throw new Exception("Illegal Parameter");
+            }
+        }
+        if(l!=r)
+            throw new Exception("Illegal Bracket");
+    }
+    private int GetCalculateResult(String res) throws Exception
     {
         Stack<Integer> number= new Stack<>();
         String[] strings=res.split(",");
@@ -27,6 +55,8 @@ class CalculateModule
             }
             else
             {
+                if((long)Integer.parseInt(s)>(Math.pow(2,31)-1)||(long)Integer.parseInt(s)<(Math.pow(-2,31)))
+                    throw new Exception("Illegal Parameter:Overflow");
                 number.push(Integer.valueOf(s));
             }
         }
@@ -34,7 +64,8 @@ class CalculateModule
     }
     private String TransForm(String expression)
     {
-        Pattern p=Pattern.compile("[\\+\\-\\*\\/]|\\(|\\)|\\d+");
+        //Pattern p=Pattern.compile("[\\+\\-\\*\\/]|\\(|\\)|\\d+");
+        Pattern p=Pattern.compile("\\(\\-\\d+\\)?|[*/()\\+\\-]|\\d+");
         Matcher m=p.matcher(expression.replaceAll(" +",""));
         Stack<String> operator = new Stack<>();
         StringBuilder sb=new StringBuilder();
@@ -65,6 +96,12 @@ class CalculateModule
             }
             else
             {
+                if(temp.contains("(")||temp.contains(")"))
+                {
+                    temp=temp.replace('(',' ');
+                    temp=temp.replace(')',' ');
+                    temp=temp.trim();
+                }
                 sb.append(temp+",");
             }
         }
@@ -73,25 +110,31 @@ class CalculateModule
         String res=sb.toString();
         return res;
     }
-    private int Calculate(String op, int a1, int a2)
+    private int Calculate(String op, int a1, int a2) throws Exception
     {
         int result=0;
         switch(op)
         {
             case "+":
+                if((long)(a2)+(long)(a1)>(Math.pow(2,31)-1)||(long)(a2)+(long)(a1)<Math.pow(-2,31))
+                    throw new Exception("Illegal Parameter:Overflow");
                 result=a2 + a1;
                 break;
             case "-":
+                if((long)(a2)-(long)(a1)>(Math.pow(2,31)-1)||(long)(a2)-(long)(a1)<Math.pow(-2,31))
+                    throw new Exception("Illegal Parameter:Overflow");
                 result=a2 - a1;
                 break;
             case "*":
+                if((long)(a2)*(long)(a1)>(Math.pow(2,31)-1)||(long)(a2)*(long)(a1)<Math.pow(-2,31))
+                    throw new Exception("Illegal Parameter:Overflow");
                 result=a2 * a1;
                 break;
             case "/":
+                if((long)(a2)/(long)(a1)>(Math.pow(2,31)-1)||(long)(a2)/(long)(a1)<Math.pow(-2,31))
+                    throw new Exception("Illegal Parameter:Overflow");
                 result=a2 / a1;
                 break;
-            default:
-                Integer.valueOf(-0);
         }
         return result;
     }
@@ -149,8 +192,6 @@ class ReadAndWriteFile
 public class Function
 {
     static int totalTimes = 0, successTimes = 0,errorTimes = 0,steps = 0;
-    //static File CalculateTimesFilePath;
-    //static File expression = new File("expression.txt");
     public static void main(String[] args) throws Exception
     {
         Scanner scanner=new Scanner(System.in);
@@ -176,8 +217,6 @@ public class Function
             errorTimes=temp[2];
             rAw.WriteExpression(ExpressionFilePath,expression);
             totalTimes++;
-            //
-
             try {
                 CalculateModule calculator=new CalculateModule();
                 int n=calculator.Run(expression);
@@ -185,9 +224,8 @@ public class Function
                 successTimes++;
             }catch (Exception e)
             {
-                e.getStackTrace();
                 errorTimes++;
-                e.printStackTrace();
+                System.out.println(e.toString());
                 rAw.WriteTimes(CalculateTimesFilePath,totalTimes,successTimes,errorTimes);
             }
             System.out.println("总共运行"+totalTimes+"次;"+"运行成功"+successTimes+"次;"+"错误运行"+errorTimes+"次。");
